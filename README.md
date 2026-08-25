@@ -68,6 +68,25 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 Then open `http://<ec2-public-ip>:8080`, unlock Jenkins with that
 password, and complete setup (create an admin user, etc.).
 
+## Required Jenkins Credentials
+
+Before any pipeline can run successfully, these four credentials need to
+be configured under **Manage Jenkins → Credentials → System → Global**.
+This is what satisfies the "Jenkins has credentials enabling ECR
+login/push, no hard-coded secrets in Git" requirement — every value below
+is referenced by ID only, never committed.
+
+| Credential ID | Type | Used for |
+|---|---|---|
+| `github-pat` | Username with password (`mikelj14` + PAT) | Authenticating Git checkouts against the application repo |
+| `AWS_ACCESS_KEY_ID` | Secret text | AWS auth for Terraform + ECR push/pull |
+| `AWS_SECRET_ACCESS_KEY` | Secret text | AWS auth for Terraform + ECR push/pull |
+| `ec2-ssh-key` | SSH Username with private key (`ec2-user`) | SSH access to the production EC2 host during the Deploy stage |
+
+The Jenkinsfile picks these up via `credentials()` in the pipeline's
+`environment` block (the two AWS keys) and `withCredentials` /
+`sshUserPrivateKey` (the GitHub PAT and SSH key) — never hard-coded.
+
 ## ⚠️ Security trade-off worth knowing
 
 Mounting the host's Docker socket into a container is a common and
